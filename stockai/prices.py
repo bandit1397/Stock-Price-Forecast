@@ -16,6 +16,41 @@ PATH = DATA / "prices.parquet"
 COLS = ["open", "high", "low", "close", "volume"]
 
 
+def _extract(raw: pd.DataFrame, tickers: list[str]) -> dict[str, pd.DataFrame]:
+    out = {}
+    for t in tickers:
+        if t not in raw.columns.get_level_values(0):
+            continue
+        df = raw[t].rename(columns=str.lower)[COLS].dropna(subset=["close"]).copy()
+        if df.empty:
+            continue
+        df["ticker"] = t
+        df = df.rename_axis("date").reset_index()
+        df["date"] = pd.to_datetime(df["date"]).dt.tz_localize(None).dt.normalize()
+        out[t] = df
+    return out
+
+
+def _fill_missing(got: dict[str, pd.DataFrame], tickers: list[str], start: str) -> None:
+    """일부 종목만 실패하면 다시 받고, 그래도 없으면 이전 시세를 유지한다. 오래된 시세는 quality_issues 가 경고한다."""
+    missing = [t for t in tickers if t not in got]
+    if not missing:
+        return
+    try:
+        got.update(_extract(yf.download(missing, start=start, auto_adjust=True, group_by="ticker", threads=True, progress=False), missing))
+    except Exception as e:  # 네트워크 일시 오류
+        log.warning("시세 재시도 실패: %s", e)
+    missing = [t for t in missing if t not in got]
+    old = pd.read_parquet(PATH) if missing and PATH.exists() else None
+    for t in missing:
+        prev = old[old["ticker"] == t] if old is not None else None
+        if prev is not None and not prev.empty:
+            got[t] = prev
+            log.warning("시세 없음, 이전 값 유지: %s", t)
+        else:
+            log.warning("시세 없음: %s", t)
+
+
 def update(tickers: list[str] | None = None, retries: int = 3) -> pd.DataFrame:
     tickers = tickers or all_tickers()
     start = settings()["history_start"]
@@ -31,19 +66,9 @@ def update(tickers: list[str] | None = None, retries: int = 3) -> pd.DataFrame:
         time.sleep(5 * (attempt + 1))
     if raw is None or raw.empty:
         raise RuntimeError("시세를 받지 못했습니다. 인터넷 연결이나 Yahoo 접속을 확인하세요.")
-    frames = []
-    for t in tickers:
-        if t not in raw.columns.get_level_values(0):
-            log.warning("시세 없음: %s", t)
-            continue
-        df = raw[t].rename(columns=str.lower)[COLS].dropna(subset=["close"]).copy()
-        if df.empty:
-            log.warning("시세 없음: %s", t)
-            continue
-        df["ticker"] = t
-        frames.append(df.rename_axis("date").reset_index())
-    out = pd.concat(frames, ignore_index=True)
-    out["date"] = pd.to_datetime(out["date"]).dt.tz_localize(None).dt.normalize()
+    got = _extract(raw, tickers)
+    _fill_missing(got, tickers, start)
+    out = pd.concat(got.values(), ignore_index=True)
     DATA.mkdir(exist_ok=True)
     out.to_parquet(PATH, index=False)
     return out

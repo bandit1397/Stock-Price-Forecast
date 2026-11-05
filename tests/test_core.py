@@ -344,3 +344,35 @@ def test_watch_scale_maps_rare_raw_scores_to_alert_levels():
         assert watchlist.calibrate(alert_raw - 1, cfg[key]) < 90
         assert watchlist.calibrate(100, cfg[key]) == 100
     assert watchlist.calibrate(None, cfg["buy_scale"]) is None
+
+
+def _yahoo(tickers, empty=()):
+    idx = pd.bdate_range("2026-11-02", periods=3)
+    cols = pd.MultiIndex.from_product([tickers, ["Open", "High", "Low", "Close", "Volume"]])
+    raw = pd.DataFrame(1.0, index=idx, columns=cols)
+    for t in empty:
+        raw[t] = np.nan
+    return raw
+
+
+def test_failed_ticker_is_retried_then_keeps_old_prices(tmp_path, monkeypatch):
+    monkeypatch.setattr(prices, "PATH", tmp_path / "p.parquet")
+    monkeypatch.setattr(prices, "DATA", tmp_path)
+    monkeypatch.setattr(prices.yf, "download", lambda t, **k: _yahoo(t))
+    prices.update(["AAA", "BBB", "CCC"])
+    calls = []
+
+    def flaky(t, **k):
+        calls.append(list(t))
+        return _yahoo(t, empty=["BBB", "CCC"]) if len(calls) == 1 else _yahoo(t, empty=["CCC"])
+
+    monkeypatch.setattr(prices.yf, "download", flaky)
+    out = prices.update(["AAA", "BBB", "CCC"])
+    assert calls[1] == ["BBB", "CCC"] and set(out["ticker"]) == {"AAA", "BBB", "CCC"}
+
+
+def test_ticker_never_seen_is_dropped_not_invented(tmp_path, monkeypatch):
+    monkeypatch.setattr(prices, "PATH", tmp_path / "p.parquet")
+    monkeypatch.setattr(prices, "DATA", tmp_path)
+    monkeypatch.setattr(prices.yf, "download", lambda t, **k: _yahoo(t, empty=["ZZZ"]))
+    assert set(prices.update(["AAA", "ZZZ"])["ticker"]) == {"AAA"}
