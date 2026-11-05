@@ -16,7 +16,7 @@ import time
 
 import numpy as np
 
-from . import alerts, analyze, backtest, forecast, prices, report, store
+from . import alerts, analyze, backtest, forecast, prices, report, store, telegram_setup
 from .config import REPORTS, portfolio, settings, stocks
 from .features import build_panel
 
@@ -92,7 +92,7 @@ def main() -> None:
     for noisy in ("yfinance", "peewee", "urllib3"):
         logging.getLogger(noisy).setLevel(logging.CRITICAL)
     p = argparse.ArgumentParser(prog="stockai")
-    p.add_argument("command", choices=["run", "scan", "train", "backtest", "test-telegram"])
+    p.add_argument("command", choices=["run", "scan", "train", "backtest", "test-telegram", "connect-telegram"])
     p.add_argument("--no-daily", action="store_true", help="일일 보고는 보내지 않고 변경 알림만 전송")
     a = p.parse_args()
     if a.command == "run":
@@ -103,5 +103,7 @@ def main() -> None:
         cmd_train()
     elif a.command == "backtest":
         cmd_backtest()
+    elif a.command == "connect-telegram":
+        sys.exit(telegram_setup.run())
     else:
         print("전송 성공" if alerts.send("✅ 주식 알림 연결 테스트") else "전송 실패 또는 토큰 미설정")
