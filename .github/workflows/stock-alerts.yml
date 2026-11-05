@@ -1,0 +1,65 @@
+name: stock-alerts
+
+# PC가 꺼져 있어도 GitHub 서버에서 무료로 실행된다 (공개 저장소).
+# GitHub 예약 실행은 수십 분 늦어질 수 있어 정확한 시각을 보장하지 않는다.
+on:
+  schedule:
+    - cron: "50 6 * * 1-5"      # 15:50 KST 한국장 마감 후 일일 보고
+    - cron: "30 21 * * 1-5"     # 06:30 KST 미국장 마감 후 일일 보고
+    - cron: "15 1-5 * * 1-5"    # 한국장 중 매시간 급변 점검
+    - cron: "15 15-20 * * 1-5"  # 미국장 중 매시간 급변 점검
+  workflow_dispatch:
+    inputs:
+      command:
+        description: "run 또는 scan"
+        default: run
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stock-alerts
+  cancel-in-progress: false
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      DART_API_KEY: ${{ secrets.DART_API_KEY }}
+      SEC_CONTACT: ${{ secrets.SEC_CONTACT }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: 이전 기록 복원
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            data
+            reports
+          key: stockai-${{ github.run_id }}
+          restore-keys: stockai-
+      - name: 실행할 작업 결정
+        id: mode
+        env:
+          SCHEDULE: ${{ github.event.schedule }}
+          INPUT: ${{ github.event.inputs.command }}
+        run: |
+          if [ -n "$INPUT" ]; then echo "cmd=$INPUT" >> "$GITHUB_OUTPUT"
+          elif [ "$SCHEDULE" = "50 6 * * 1-5" ] || [ "$SCHEDULE" = "30 21 * * 1-5" ]; then echo "cmd=run" >> "$GITHUB_OUTPUT"
+          else echo "cmd=scan" >> "$GITHUB_OUTPUT"; fi
+      - run: python -m stockai ${{ steps.mode.outputs.cmd }}
+      - name: 기록 저장
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            data
+            reports
+          key: stockai-${{ github.run_id }}

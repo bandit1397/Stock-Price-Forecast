@@ -1,0 +1,23 @@
+# 정치·경제·사회 이슈 감시 목록. exposure: 해당 이슈 뉴스 증가 시 업종 영향 방향 (+1 수혜, -1 피해)
+# 방향은 가정이며 단기 뉴스량이 곧 주가 영향을 뜻하지는 않습니다.
+issues:
+  - {id: rates, name: 금리·연준, q: "Federal Reserve interest rate decision", exposure: {기술주: -1, 바이오: -1}}
+  - {id: tariff, name: 관세·무역, q: "tariffs trade war semiconductors", exposure: {기술주: -1, 원자재: 1}}
+  - {id: china_ctrl, name: 대중 수출통제, q: "China export controls chips rare earth", exposure: {기술주: -1, 원자재: 1}}
+  - {id: war, name: 전쟁·지정학, q: "war escalation Middle East Ukraine Taiwan", exposure: {방산우주: 1, 에너지: 1, 원자재: 1, 기술주: -1}}
+  - {id: oil, name: OPEC·유가, q: "OPEC production cut oil supply", exposure: {에너지: 1}}
+  - {id: ai_capex, name: AI 설비투자, q: "AI capex hyperscaler spending data center", exposure: {기술주: 1, 에너지: 1}}
+  - {id: ai_bubble, name: AI 거품 우려, q: "AI bubble valuation concern", exposure: {기술주: -1}}
+  - {id: energy_policy, name: 에너지 정책, q: "nuclear renewable energy policy subsidy", exposure: {에너지: 1}}
+  - {id: pharma_policy, name: 약가·보건 정책, q: "drug pricing policy pharma tariff", exposure: {바이오: -1}}
+  - {id: recession, name: 경기침체 우려, q: "recession fears unemployment", exposure: {원자재: -1, 에너지: -1, 기술주: -1}}
+  - {id: kr_policy, name: 한국 증시 정책, q: "코스피 정책 상법 개정 밸류업", lang: ko, exposure: {}}
+  - {id: kr_fx, name: 원화 환율, q: "원달러 환율 외국인 매도", lang: ko, exposure: {}}
+
+# 예정 이벤트. 2027 FOMC 일정은 제3자 자료 기준이므로 federalreserve.gov 에서 재확인하세요.
+events:
+  - {date: 2026-12-09, name: FOMC 금리 결정}
+  - {date: 2027-01-27, name: FOMC 금리 결정}
+  - {date: 2027-03-17, name: FOMC 금리 결정}
+  - {date: 2027-04-28, name: FOMC 금리 결정}
+  - {date: 2027-06-09, name: FOMC 금리 결정}

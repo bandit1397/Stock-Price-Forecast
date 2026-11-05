@@ -1,0 +1,69 @@
+# category: 기술주 / 에너지 / 원자재 / 방산우주 / 바이오
+# cyclical: 경기순환 업종 (이익 고점의 낮은 PER 함정 방지)
+# driver: 실적에 직접 연결되는 원자재 선물
+stocks:
+  - {ticker: 005930.KS, name: 삼성전자, en: Samsung Electronics, market: KR, category: 기술주, theme: ai_semis, cyclical: true}
+  - {ticker: 000660.KS, name: SK하이닉스, en: SK hynix, market: KR, category: 기술주, theme: ai_semis, cyclical: true}
+  - {ticker: 263860.KQ, name: 지니언스, en: Genians, market: KR, category: 기술주, theme: cyber}
+  - {ticker: 232680.KQ, name: 라온로보틱스, en: Raon Robotics, market: KR, category: 기술주, theme: robotics, cyclical: true}
+  - {ticker: 357580.KQ, name: 아모센스, en: Amosense, market: KR, category: 기술주, theme: components}
+  - {ticker: NVDA, name: NVIDIA, en: NVIDIA, market: US, category: 기술주, theme: ai_semis}
+  - {ticker: MSFT, name: Microsoft, en: Microsoft, market: US, category: 기술주, theme: software}
+  - {ticker: AAPL, name: Apple, en: Apple, market: US, category: 기술주, theme: software}
+  - {ticker: TSLA, name: Tesla, en: Tesla, market: US, category: 기술주, theme: robotics}
+  - {ticker: MXL, name: MaxLinear, en: MaxLinear, market: US, category: 기술주, theme: ai_semis, cyclical: true}
+  - {ticker: UCTT, name: Ultra Clean, en: Ultra Clean Holdings, market: US, category: 기술주, theme: ai_semis, cyclical: true}
+  - {ticker: MRVL, name: Marvell, en: Marvell Technology, market: US, category: 기술주, theme: ai_semis}
+  # 에너지
+  - {ticker: XOM, name: ExxonMobil, en: ExxonMobil, market: US, category: 에너지, theme: oil_gas, cyclical: true, driver: CL=F}
+  - {ticker: CVX, name: Chevron, en: Chevron, market: US, category: 에너지, theme: oil_gas, cyclical: true, driver: CL=F}
+  - {ticker: VST, name: Vistra, en: Vistra, market: US, category: 에너지, theme: nuclear, cyclical: true, driver: NG=F}
+  - {ticker: CEG, name: Constellation, en: Constellation Energy, market: US, category: 에너지, theme: nuclear}
+  - {ticker: FSLR, name: First Solar, en: First Solar, market: US, category: 에너지, theme: solar, cyclical: true}
+  # 원자재
+  - {ticker: FCX, name: Freeport-McMoRan, en: Freeport-McMoRan, market: US, category: 원자재, theme: copper, cyclical: true, driver: HG=F}
+  - {ticker: NEM, name: Newmont, en: Newmont, market: US, category: 원자재, theme: gold, cyclical: true, driver: GC=F}
+  - {ticker: SCCO, name: Southern Copper, en: Southern Copper, market: US, category: 원자재, theme: copper, cyclical: true, driver: HG=F}
+  - {ticker: ALB, name: Albemarle, en: Albemarle, market: US, category: 원자재, theme: lithium, cyclical: true}
+  - {ticker: NUE, name: Nucor, en: Nucor, market: US, category: 원자재, theme: steel, cyclical: true}
+  # 급부상 산업 대표 종목
+  - {ticker: 267260.KS, name: HD현대일렉트릭, en: HD Hyundai Electric, market: KR, category: 기술주, theme: ai_power, cyclical: true}
+  - {ticker: 010120.KS, name: LS ELECTRIC, en: LS Electric, market: KR, category: 기술주, theme: ai_power, cyclical: true}
+  - {ticker: VRT, name: Vertiv, en: Vertiv, market: US, category: 기술주, theme: ai_power}
+  - {ticker: ETN, name: Eaton, en: Eaton, market: US, category: 기술주, theme: ai_power}
+  - {ticker: 277810.KQ, name: 레인보우로보틱스, en: Rainbow Robotics, market: KR, category: 기술주, theme: robotics}
+  - {ticker: 454910.KS, name: 두산로보틱스, en: Doosan Robotics, market: KR, category: 기술주, theme: robotics}
+  - {ticker: SYM, name: Symbotic, en: Symbotic, market: US, category: 기술주, theme: robotics}
+  - {ticker: CGNX, name: Cognex, en: Cognex, market: US, category: 기술주, theme: robotics, cyclical: true}
+  - {ticker: 012450.KS, name: 한화에어로스페이스, en: Hanwha Aerospace, market: KR, category: 방산우주, theme: defense}
+  - {ticker: 079550.KS, name: LIG넥스원, en: LIG Nex1, market: KR, category: 방산우주, theme: defense}
+  - {ticker: RKLB, name: Rocket Lab, en: Rocket Lab, market: US, category: 방산우주, theme: defense}
+  - {ticker: AVAV, name: AeroVironment, en: AeroVironment, market: US, category: 방산우주, theme: defense}
+  - {ticker: 053800.KQ, name: 안랩, en: AhnLab, market: KR, category: 기술주, theme: cyber}
+  - {ticker: CRWD, name: CrowdStrike, en: CrowdStrike, market: US, category: 기술주, theme: cyber}
+  - {ticker: PANW, name: Palo Alto Networks, en: Palo Alto Networks, market: US, category: 기술주, theme: cyber}
+  - {ticker: 207940.KS, name: 삼성바이오로직스, en: Samsung Biologics, market: KR, category: 바이오, theme: biotech}
+  - {ticker: 196170.KQ, name: 알테오젠, en: Alteogen, market: KR, category: 바이오, theme: biotech}
+  - {ticker: VRTX, name: Vertex, en: Vertex Pharmaceuticals, market: US, category: 바이오, theme: biotech}
+  - {ticker: REGN, name: Regeneron, en: Regeneron, market: US, category: 바이오, theme: biotech}
+
+# 급부상 산업 탐색 대상 (ETF가 산업 자금 흐름의 대리 지표)
+themes:
+  ai_semis: {name: AI 반도체, etf: SOXX, news: "AI semiconductor demand"}
+  ai_power: {name: AI 전력·냉각, etf: PAVE, news: "data center power cooling demand"}
+  robotics: {name: 로봇·자동화, etf: BOTZ, news: "humanoid robot automation orders"}
+  defense: {name: 방산·우주, etf: ITA, news: "defense spending space contract"}
+  cyber: {name: 사이버보안, etf: CIBR, news: "cybersecurity spending breach"}
+  biotech: {name: 바이오·신약, etf: XBI, news: "FDA approval biotech"}
+  software: {name: 소프트웨어·플랫폼, etf: IGV, news: "enterprise software AI spending"}
+  nuclear: {name: 원자력·전력, etf: URA, news: "nuclear power deal uranium"}
+  solar: {name: 태양광, etf: TAN, news: "solar policy tariff demand"}
+  oil_gas: {name: 석유·가스, etf: XLE, news: "oil price OPEC supply"}
+  copper: {name: 구리, etf: COPX, news: "copper supply deficit"}
+  gold: {name: 금, etf: GDX, news: "gold price central bank buying"}
+  lithium: {name: 리튬·배터리, etf: LIT, news: "lithium price battery demand"}
+  steel: {name: 철강·금속, etf: XME, news: "steel tariff prices"}
+
+benchmarks: {KR: "^KS11", KRQ: "^KQ11", US: "^GSPC"}
+market_series: ["^GSPC", "^IXIC", "^KS11", "^KQ11", "^VIX", "^TNX", "DX-Y.NYB", "KRW=X", "CL=F", "NG=F", "GC=F", "HG=F", "SI=F"]
+fred_series: {DGS10: 미국 10년 금리, DGS2: 미국 2년 금리, T10Y2Y: 장단기 금리차, BAMLH0A0HYM2: 하이일드 스프레드, FEDFUNDS: 기준금리, CPIAUCSL: 소비자물가, UNRATE: 실업률}

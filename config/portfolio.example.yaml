@@ -1,0 +1,5 @@
+# 이 파일을 portfolio.yaml 로 복사해 보유 종목을 적으면 손익과 손절선을 점검합니다.
+# portfolio.yaml 은 GitHub에 올라가지 않습니다. stop을 비우면 평균단가의 -15%를 씁니다.
+holdings:
+  - {ticker: 005930.KS, qty: 10, avg_price: 200000, stop: 170000}
+  - {ticker: NVDA, qty: 5, avg_price: 180}

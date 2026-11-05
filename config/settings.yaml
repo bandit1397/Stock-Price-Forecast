@@ -1,0 +1,35 @@
+# 예측 기간 (거래일 기준)
+horizons: {1일: 1, 3일: 3, 1주: 5, 1개월: 21, 6개월: 126, 1년: 252, 2년: 504, 3년: 756}
+# 2년/3년은 독립 표본이 너무 적어 ML 검증이 불가능 -> 시나리오로만 제공
+ml_max_horizon: 252
+history_start: "2008-01-01"
+first_test_year: 2016
+long_run_return: 0.08        # 기준 시나리오 연 기대수익 (보수적 가정)
+
+# 예측력 검증 관문: 전부 통과해야 확률을 표시 (12개 동시 검정이라 1% 하한 사용)
+gate: {min_auc: 0.52, min_fold_win: 0.6, ci_quantile: 0.01}
+
+# 거래비용 (편도, %). 증권거래세는 2026-01-01 기준 코스피 0.05+농특세 0.15, 코스닥 0.20
+costs:
+  KR: {buy: 0.115, sell: 0.315}    # 수수료 0.015 + 슬리피지 0.10 (+ 매도세 0.20)
+  US: {buy: 0.35, sell: 0.35}      # 수수료 0.10 + 슬리피지 0.10 + 환전 스프레드 0.15
+
+# 신호 기준
+thresholds:
+  tech: 60
+  demand: 10        # 시장 수요 15점 만점 중
+  fin: 50
+  value: 40
+  timing_buy: 60
+  timing_sell: 35
+  abnormal_veto: 70
+  min_reward_risk: 1.5
+risk: {atr_stop_mult: 2.5, risk_per_trade: 0.01, max_position: 0.10, max_sector: 0.30}
+
+# 기간별 판단 가중치 (사람이 정한 값이며 통계적으로 검증된 값이 아님)
+view_weights:
+  단기: {timing: 0.45, flow: 0.20, news: 0.20, safety: 0.15}
+  중기: {timing: 0.20, flow: 0.10, news: 0.10, fin: 0.20, value: 0.20, macro: 0.10, tech: 0.10}
+  장기: {tech: 0.40, fin: 0.25, value: 0.25, macro: 0.10}
+
+alerts: {dedup_days: 3, daily_top: 5}
