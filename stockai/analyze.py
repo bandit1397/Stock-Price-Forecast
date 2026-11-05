@@ -10,7 +10,7 @@ import pandas as pd
 
 from . import filings, flows, forecast, fundamentals, macro, news, prices, risk, signals, store, themes
 from .config import REPORTS, env, macro_themes, portfolio, stocks
-from .features import build_panel
+from .features import build_panel, last_moves
 
 log = logging.getLogger(__name__)
 KEEP = ["rev_g", "rev_cagr", "gm", "om", "om_avg", "roe", "de", "fwd_pe", "ev_ebitda", "ps", "rd_intensity", "mcap", "earnings_date"]
@@ -104,7 +104,7 @@ def run(use_network_extras: bool = True) -> dict:
              "headlines": nw.get("headlines", []), "red_flags": nw.get("red_flags", []),
              "filing_flags": filing.get(t, []), "abnormal": ab["abnormal"], "abnormal_level": ab["level"],
              "abnormal_reasons": ab["reasons"], "safety": 100 - ab["abnormal"],
-             "macro": macro.stock_macro(reg, s, panel, tilt), "rev_g": f.get("rev_g"), **tech,
+             "macro": macro.stock_macro(reg, s, panel, tilt), "rev_g": f.get("rev_g"), **tech, **last_moves(df["close"]),
              "earnings_days": (pd.Timestamp(f["earnings_date"]) - pd.Timestamp.now().normalize()).days if f.get("earnings_date") else None,
              "fundamentals": {k: f.get(k) for k in KEEP}}
         c.update(signals.decide(c, feat, reg[s["market"]]["stage"]))

@@ -32,4 +32,5 @@ view_weights:
   중기: {timing: 0.20, flow: 0.10, news: 0.10, fin: 0.20, value: 0.20, macro: 0.10, tech: 0.10}
   장기: {tech: 0.40, fin: 0.25, value: 0.25, macro: 0.10}
 
-alerts: {dedup_days: 3, daily_top: 5}
+# unusual_z: 하루 등락이 평소 변동폭의 몇 배면 일일 보고 특이 사항에 넣을지
+alerts: {dedup_days: 3, daily_top: 5, unusual_z: 3}

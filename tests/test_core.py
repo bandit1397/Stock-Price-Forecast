@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from stockai import alerts, backtest, features, filings, forecast, fundamentals, news, prices, risk, signals
+from stockai import alerts, backtest, features, filings, forecast, fundamentals, news, prices, report, risk, signals
 
 
 def ohlcv(n=600, seed=1, drift=0.0005, start="2020-01-01"):
@@ -241,3 +241,49 @@ def test_config_is_consistent():
     for t, m in moat()["scores"].items():
         assert len(m["s"]) == 6 and all(v <= c for v, c in zip(m["s"], limits)), t
     assert all(s["theme"] in universe()["themes"] or s["theme"] == "components" for s in stocks())
+
+
+def test_last_moves_measures_today_against_past_volatility():
+    c = ohlcv(n=100, seed=3)["close"].copy()
+    calm = features.last_moves(c)
+    c.iloc[-1] = c.iloc[-2] * 1.15
+    jump = features.last_moves(c)
+    assert abs(calm["z1"]) < 3 < jump["z1"]
+    assert jump["ret1"] == pytest.approx(0.15)
+    assert features.last_moves(c.tail(5))["ret21"] is None
+
+
+def _row(name, category, **kw):
+    return {"name": name, "category": category, "action": signals.HOLD, "views": {"장기": {"score": 50}}, "ret1": 0.01, "ret21": None,
+            "z1": 0.5, "filing_flags": [], "abnormal_level": "낮음", "abnormal_reasons": [], "red_flags": [], "market": "US",
+            "close": 10.0, "reasons": ["사유"], **kw}
+
+
+def _report(rows, goods=None, themes=()):
+    return {"day": "2026-11-05", "regime": {"US": {"stage": "중립"}, "KR": {"stage": "중립"}, "commodities": goods or {}},
+            "model": None, "stocks": rows, "themes": list(themes), "issues": [], "events": [], "data_issues": [], "portfolio": []}
+
+
+def test_daily_report_lists_sectors_and_unusual_items():
+    gold = {"last": 4000.0, "ret1": -0.06, "ret21": 0.02, "z1": -4.0, "above50": True, "above200": False}
+    theme = {"id": "rare_earth", "name": "희토류·전략광물", "score": 70.0, "stage": "조기 발견"}
+    rep = _report([_row("광산", "원자재", filing_flags=["유상증자"]), _row("방산", "방산우주", abnormal_level="주의", abnormal_reasons=["거래량 폭증"]),
+                   _row("기술", "기술주", red_flags=[{"word": "소송"}])], {"금": gold, "구리": None}, [theme])
+    text = report.telegram_summary(rep)
+    assert "금 4,000.00 | -6.0% / +2.0% | 혼조" in text and "구리" not in text
+    assert f"· 광산 [{signals.HOLD}] +1.0% / -" in text and f"· 방산 [{signals.HOLD}]" in text
+    assert "산업 단계: 희토류·전략광물 조기 발견" in text
+    odd = report.unusual(rep)
+    assert odd[0].startswith("광산 공시") and odd[1].startswith("방산 이상거래") and "금 급변" in odd[2]
+    assert any("소송" in x and "오탐" in x for x in odd)
+
+
+def test_quiet_day_says_so_and_long_unusual_list_is_cut():
+    assert "■ 특이 사항 없음" in report.telegram_summary(_report([_row("광산", "원자재")]))
+    many = [_row(f"종목{i}", "기술주", z1=5.0) for i in range(report.UNUSUAL_MAX + 2)]
+    assert "외 2건" in report.telegram_summary(_report(many))
+
+
+def test_report_commodities_are_downloaded():
+    from stockai.config import all_tickers, universe
+    assert set(universe()["commodities"].values()) <= set(all_tickers())

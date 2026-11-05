@@ -23,6 +23,16 @@ def atr(df: pd.DataFrame, n: int = 14) -> pd.Series:
     return tr.ewm(alpha=1 / n, min_periods=n).mean()
 
 
+def last_moves(close: pd.Series) -> dict:
+    """최근 등락과, 직전 63일 변동폭 대비 마지막 하루 움직임의 크기."""
+    c = close.tail(70)
+    r = np.log(c).diff()
+    sig = r.iloc[-64:-1].std()
+    return {"ret1": float(c.iloc[-1] / c.iloc[-2] - 1),
+            "ret21": float(c.iloc[-1] / c.iloc[-22] - 1) if len(c) >= 22 else None,
+            "z1": float(r.iloc[-1] / sig) if sig > 0 else None}
+
+
 def stock_features(df: pd.DataFrame) -> pd.DataFrame:
     c, v = df["close"], df["volume"].astype(float)
     logc = np.log(c)

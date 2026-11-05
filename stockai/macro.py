@@ -9,6 +9,7 @@ import pandas as pd
 import requests
 
 from .config import universe
+from .features import last_moves
 
 log = logging.getLogger(__name__)
 
@@ -48,8 +49,8 @@ def _trend(panel: dict, t: str) -> dict | None:
         return None
     c = panel[t]["close"]
     return {"last": float(c.iloc[-1]), "above200": bool(c.iloc[-1] > c.tail(200).mean()),
-            "above50": bool(c.iloc[-1] > c.tail(50).mean()), "ret21": float(c.iloc[-1] / c.iloc[-22] - 1),
-            "ret63": float(c.iloc[-1] / c.iloc[-64] - 1)}
+            "above50": bool(c.iloc[-1] > c.tail(50).mean()), "ret63": float(c.iloc[-1] / c.iloc[-64] - 1),
+            **last_moves(c)}
 
 
 def regime(panel: dict, snapshot: dict) -> dict:
@@ -79,8 +80,7 @@ def regime(panel: dict, snapshot: dict) -> dict:
         s = float(np.clip(s, 0, 100))
         out[market] = {"score": s, "stage": "위험 회피" if s < 35 else "중립" if s < 60 else "위험 선호", "index": t}
     out["reasons"] = reasons
-    out["commodities"] = {n: _trend(panel, t) for n, t in
-                          {"WTI 원유": "CL=F", "천연가스": "NG=F", "금": "GC=F", "구리": "HG=F", "은": "SI=F"}.items()}
+    out["commodities"] = {n: _trend(panel, t) for n, t in universe()["commodities"].items()}
     return out
 
 

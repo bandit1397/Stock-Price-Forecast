@@ -6,6 +6,9 @@ from .alerts import FOOT, fmt_price
 from .config import REPORTS, settings
 
 ORDER = {sg.BUY: 0, sg.WAIT: 1, sg.HOLD: 2, sg.SELL: 3, sg.AVOID: 4, sg.UNKNOWN: 5}
+SECTORS = {"광물·원자재 종목": ("원자재", ("copper", "gold", "lithium", "steel", "rare_earth")),
+           "방산·우주 종목": ("방산우주", ("defense",))}
+UNUSUAL_MAX = 8
 
 
 def _long(r: dict) -> float:
@@ -23,6 +26,39 @@ def model_status(rep: dict) -> str:
         return "모델 미학습"
     passed = [k for k, v in m["gate"].items() if v.get("passed")]
     return f'검증 통과 {len(passed)}/{len(m["gate"])}개' + (f' ({", ".join(passed)})' if passed else " → 상승 확률은 표시하지 않음")
+
+
+def _chg(x) -> str:
+    return "-" if x is None else f"{x:+.1%}"
+
+
+def _direction(v: dict) -> str:
+    return "상승" if v["above50"] and v["above200"] else "하락" if not (v["above50"] or v["above200"]) else "혼조"
+
+
+def commodity_lines(rep: dict) -> list[str]:
+    return [f'· {n} {v["last"]:,.2f} | {_chg(v["ret1"])} / {_chg(v["ret21"])} | {_direction(v)}'
+            for n, v in rep["regime"]["commodities"].items() if v]
+
+
+def sector_lines(rep: dict, category: str, theme_ids: tuple) -> list[str]:
+    lines = [f'· {r["name"]} [{r["action"]}] {_chg(r["ret1"])} / {_chg(r["ret21"])}' for r in ranked(rep, category)]
+    stages = [f'{t["name"]} {t["stage"]}' for t in rep["themes"] if t["id"] in theme_ids]
+    return lines + (["· 산업 단계: " + ", ".join(stages)] if stages else [])
+
+
+def unusual(rep: dict) -> list[str]:
+    """평소와 다른 움직임. 중대한 항목부터 나열한다."""
+    z = settings()["alerts"]["unusual_z"]
+    big = lambda x: abs(x.get("z1") or 0) >= z
+    stocks = rep["stocks"]
+    moved = [(n, v) for n, v in rep["regime"]["commodities"].items() if v and big(v)] + [(r["name"], r) for r in stocks if big(r)]
+    moved.sort(key=lambda m: -abs(m[1]["z1"]))
+    return ([f'{r["name"]} 공시: {r["filing_flags"][0]}' for r in stocks if r["filing_flags"]]
+            + [f'{r["name"]} 이상거래 패턴 {r["abnormal_level"]}: {r["abnormal_reasons"][0]}' for r in stocks if r["abnormal_level"] != "낮음"]
+            + [f'{n} 급변 {_chg(x["ret1"])} (평소 변동의 {abs(x["z1"]):.1f}배)' for n, x in moved]
+            + [f'{t["name"]} 산업: {t["stage"]}' for t in rep["themes"] if t["stage"] in ("과열 경고", "조기 발견")]
+            + [f"""{r["name"]} 뉴스 경고어 '{r["red_flags"][0]["word"]}' (오탐 가능, 원문 확인)""" for r in stocks if r["red_flags"]])
 
 
 def telegram_summary(rep: dict) -> str:
@@ -44,6 +80,16 @@ def telegram_summary(rep: dict) -> str:
     if bad:
         lines.append("\n■ 매도 검토·회피")
         lines += [f'· {r["name"]} [{r["action"]}]: {r["reasons"][0]}' for r in bad[:n]]
+    odd = unusual(rep)
+    lines.append("\n■ 특이 사항" if odd else "\n■ 특이 사항 없음")
+    lines += [f"· {x}" for x in odd[:UNUSUAL_MAX]]
+    if len(odd) > UNUSUAL_MAX:
+        lines.append(f"· 외 {len(odd) - UNUSUAL_MAX}건은 대시보드에서 확인")
+    lines.append("\n■ 원자재 시세 (1일 / 1개월 | 추세)")
+    lines += commodity_lines(rep)
+    for title, (category, theme_ids) in SECTORS.items():
+        lines.append(f"\n■ {title} (1일 / 1개월)")
+        lines += sector_lines(rep, category, theme_ids)
     lines.append("\n■ 급부상 산업 상위 5")
     lines += [f'· {t["name"]} {t["score"]:.0f}점 ({t["stage"]})' for t in rep["themes"][:5]]
     hot = [i for i in rep["issues"] if (i["intensity"] or 0) >= 1.5][:3]
