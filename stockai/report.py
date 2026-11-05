@@ -84,7 +84,7 @@ def telegram_summary(rep: dict) -> str:
     lines.append("\n■ 특이 사항" if odd else "\n■ 특이 사항 없음")
     lines += [f"· {x}" for x in odd[:UNUSUAL_MAX]]
     if len(odd) > UNUSUAL_MAX:
-        lines.append(f"· 외 {len(odd) - UNUSUAL_MAX}건은 대시보드에서 확인")
+        lines.append(f"· 외 {len(odd) - UNUSUAL_MAX}건 생략")
     lines.append("\n■ 원자재 시세 (1일 / 1개월 | 추세)")
     lines += commodity_lines(rep)
     for title, (category, theme_ids) in SECTORS.items():
