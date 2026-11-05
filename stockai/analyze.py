@@ -8,7 +8,7 @@ from datetime import date
 import numpy as np
 import pandas as pd
 
-from . import filings, flows, forecast, fundamentals, macro, news, prices, risk, signals, store, themes
+from . import filings, flows, forecast, fundamentals, macro, news, prices, risk, signals, store, themes, watchlist
 from .config import REPORTS, env, macro_themes, portfolio, stocks
 from .features import build_panel, last_moves
 
@@ -120,6 +120,8 @@ def run(use_network_extras: bool = True) -> dict:
                                key=lambda x: -(x["intensity"] or 0)),
               "themes": theme_rank, "stocks": results, "data_issues": issues_q, "events": upcoming_events(fund),
               "portfolio": portfolio_check(results), "scorecard": store.live_scorecard(panel),
+              "watch": watchlist.score_all(watchlist.build(results, reg, tilt, panel), panel),
+              "watch_scorecard": store.watch_scorecard(panel),
               "model": {"trained": bundle["trained"], "gate": bundle["gate"], "coverage": bundle["coverage"]} if bundle else None}
     bt = REPORTS / "backtest.json"
     report["backtest"] = json.loads(bt.read_text(encoding="utf-8")) if bt.exists() else None

@@ -16,6 +16,7 @@ create table if not exists signals(day text, ticker text, action text, timing re
 create table if not exists forecasts(day text, ticker text, horizon text, days int, close real, low real, mid real,
   high real, p_up real, p_ref real, primary key(day, ticker, horizon));
 create table if not exists alerts(key text primary key, sent_at text);
+create table if not exists watch_alerts(day text, ticker text, side text, score real, close real);
 """
 
 
@@ -52,6 +53,30 @@ def should_send(key: str, dedup_days: int) -> bool:
             return False
         con.execute("insert or replace into alerts values(?,?)", (key, datetime.now().isoformat()))
         return True
+
+
+def log_watch(day: str, ticker: str, side: str, score: float, close: float) -> None:
+    with closing(connect()) as con, con:
+        con.execute("insert into watch_alerts values(?,?,?,?,?)", (day, ticker, side, score, close))
+
+
+def watch_scorecard(panel: dict) -> list[dict]:
+    """감시 알림이 다음 날과 1주 뒤에 맞았는지 채점한다. 매수는 상승, 매도는 하락이 적중."""
+    with closing(connect()) as con:
+        d = pd.read_sql("select * from watch_alerts", con)
+    out = []
+    for side, g in d.groupby("side"):
+        for days, label in ((1, "다음 날"), (5, "1주 뒤")):
+            rets = []
+            for r in g.itertuples():
+                df = panel.get(r.ticker)
+                after = df.loc[df.index > pd.Timestamp(r.day), "close"] if df is not None else []
+                if len(after) >= days:
+                    rets.append(after.iloc[days - 1] / r.close - 1)
+            if rets:
+                good = [x > 0 if side == "buy" else x < 0 for x in rets]
+                out.append({"side": side, "label": label, "n": len(rets), "hit": sum(good) / len(good), "avg": sum(rets) / len(rets)})
+    return out
 
 
 def live_scorecard(panel: dict) -> list[dict]:

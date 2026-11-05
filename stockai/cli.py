@@ -16,12 +16,19 @@ import time
 
 import numpy as np
 
-from . import alerts, analyze, backtest, forecast, prices, report, store, telegram_setup
+from . import alerts, analyze, backtest, forecast, prices, report, store, telegram_setup, watchlist
 from .config import REPORTS, portfolio, settings, stocks
 from .features import build_panel
 
 log = logging.getLogger("stockai")
 RETRAIN_DAYS = 7
+
+
+def send_watch(scored: list[dict]) -> int:
+    msgs = watchlist.alerts(scored)
+    if msgs:
+        alerts.send("\n\n".join(msgs) + "\n\n" + watchlist.NOT_PROBABILITY)
+    return len(msgs)
 
 
 def cmd_train() -> None:
@@ -56,9 +63,10 @@ def cmd_run(args) -> None:
     urgent = alerts.signal_changes(rep["stocks"], prev) + alerts.theme_alerts(rep["themes"])
     if urgent:
         alerts.send("🔔 신호 변경\n\n" + "\n\n".join(urgent) + alerts.FOOT)
+    watch = send_watch(rep["watch"])
     if not args.no_daily:
         alerts.send(report.telegram_summary(rep))
-    print(f"완료: 종목 {len(rep['stocks'])}개, 즉시 알림 {len(urgent)}건")
+    print(f"완료: 종목 {len(rep['stocks'])}개, 즉시 알림 {len(urgent)}건, 감시 알림 {watch}건")
 
 
 def cmd_scan() -> None:
@@ -82,7 +90,8 @@ def cmd_scan() -> None:
             msgs.append(f'[손절선] {h["ticker"]} 현재 {df["close"].iloc[-1]:,.2f} ≤ {stop:,.2f}')
     if msgs:
         alerts.send("⚡ 장중 알림\n\n" + "\n".join(msgs) + alerts.FOOT)
-    print(f"점검 완료: 알림 {len(msgs)}건")
+    watch = send_watch(watchlist.score_all(watchlist.saved_rows(), panel))
+    print(f"점검 완료: 알림 {len(msgs)}건, 감시 알림 {watch}건")
 
 
 def main() -> None:

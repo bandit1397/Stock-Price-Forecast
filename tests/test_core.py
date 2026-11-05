@@ -5,7 +5,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from stockai import alerts, backtest, features, filings, forecast, fundamentals, news, prices, report, risk, signals
+from stockai import alerts, backtest, features, filings, forecast, fundamentals, news, prices, report, risk, signals, store, watchlist
+from stockai.config import settings
 
 
 def ohlcv(n=600, seed=1, drift=0.0005, start="2020-01-01"):
@@ -261,7 +262,8 @@ def _row(name, category, **kw):
 
 def _report(rows, goods=None, themes=()):
     return {"day": "2026-11-05", "regime": {"US": {"stage": "중립"}, "KR": {"stage": "중립"}, "commodities": goods or {}},
-            "model": None, "stocks": rows, "themes": list(themes), "issues": [], "events": [], "data_issues": [], "portfolio": []}
+            "model": None, "stocks": rows, "themes": list(themes), "issues": [], "events": [], "data_issues": [], "portfolio": [],
+            "watch": [], "watch_scorecard": []}
 
 
 def test_daily_report_lists_sectors_and_unusual_items():
@@ -287,3 +289,58 @@ def test_quiet_day_says_so_and_long_unusual_list_is_cut():
 def test_report_commodities_are_downloaded():
     from stockai.config import all_tickers, universe
     assert set(universe()["commodities"].values()) <= set(all_tickers())
+
+
+def _watch_row(**kw):
+    return {"ticker": "AAA", "name": "테스트", "market": "US", "blocks": [], **kw}
+
+
+def _watch_panel(close_drift=0.002):
+    return {"AAA": ohlcv(n=400, seed=5, drift=close_drift), "^GSPC": ohlcv(n=400, seed=6, drift=0.0)}
+
+
+def test_watch_blend_skips_missing_and_flips_for_sell():
+    w = {"timing": 0.5, "value": 0.25, "abnormal": 0.25}
+    assert watchlist.blend({"timing": 80, "value": None, "abnormal": 20}, w) == pytest.approx(60)
+    assert watchlist.blend({"timing": 80, "value": None, "abnormal": 20}, w, flip=True) == pytest.approx(20)
+    assert watchlist.blend({}, w) is None
+
+
+def test_watch_safety_block_caps_buy_score():
+    parts = dict.fromkeys(watchlist.SLOW, 100.0) | {"abnormal": 0.0}
+    free = watchlist.score(_watch_row(parts=parts), _watch_panel())
+    held = watchlist.score(_watch_row(parts=parts, blocks=["3일 내 실적 발표"]), _watch_panel())
+    assert held["buy"] <= settings()["watch"]["blocked_buy_max"] and held["held"][0] == "3일 내 실적 발표"
+    assert free["sell"] == held["sell"] and free["buy"] >= held["buy"]
+
+
+def test_watch_alert_levels_and_dedup(tmp_path, monkeypatch):
+    monkeypatch.setattr(store, "DB", tmp_path / "h.db")
+    s = {"ticker": "AAA", "name": "테스트", "market": "US", "buy": 96.0, "sell": 10.0, "close": 10.0, "stop": 9.0, "day": "2026-11-05"}
+    first = watchlist.alerts([s])
+    assert len(first) == 1 and "강한 매수" in first[0] and "손절 참고" in first[0]
+    assert watchlist.alerts([s]) == []
+    assert watchlist.alerts([{**s, "buy": 91.0}]) == []          # 95점을 보냈으면 90점은 다시 보내지 않는다
+    assert watchlist.alerts([{**s, "buy": 50.0, "sell": 92.0}])[0].startswith("🔔 매도")
+
+
+def test_watch_scorecard_counts_sell_hit_when_price_falls(tmp_path, monkeypatch):
+    monkeypatch.setattr(store, "DB", tmp_path / "h.db")
+    idx = pd.bdate_range("2026-11-02", periods=7)
+    panel = {"AAA": pd.DataFrame({"close": [100.0, 90, 80, 80, 80, 80, 80]}, index=idx)}
+    store.log_watch("2026-11-02", "AAA", "sell", 92, 100.0)
+    card = {c["label"]: c for c in store.watch_scorecard(panel)}
+    assert card["다음 날"]["hit"] == 1 and card["다음 날"]["avg"] == pytest.approx(-0.1) and card["1주 뒤"]["n"] == 1
+
+
+def test_watch_messages_say_score_is_not_probability():
+    assert "상승 확률이 아닙니다" in watchlist.NOT_PROBABILITY
+
+
+def test_watch_scale_maps_rare_raw_scores_to_alert_levels():
+    cfg = settings()["watch"]
+    for key, alert_raw in (("buy_scale", 81.5), ("sell_scale", 77.0)):
+        assert watchlist.calibrate(alert_raw, cfg[key]) == 90
+        assert watchlist.calibrate(alert_raw - 1, cfg[key]) < 90
+        assert watchlist.calibrate(100, cfg[key]) == 100
+    assert watchlist.calibrate(None, cfg["buy_scale"]) is None

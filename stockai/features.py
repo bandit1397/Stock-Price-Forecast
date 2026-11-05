@@ -71,6 +71,16 @@ def timing_score(f: pd.DataFrame) -> pd.Series:
     return s.clip(0, 100).where(f["ma200_gap"].notna())
 
 
+def price_frame(df: pd.DataFrame, bench: pd.Series) -> pd.DataFrame:
+    """가격 특성, 시장 대비 수익률, 시점 점수. bench 는 df 날짜에 맞춘 지수 종가."""
+    f = stock_features(df)
+    lb = np.log(bench)
+    for n in (21, 63):
+        f[f"rs_{n}"] = f[f"ret_{n}"] - lb.diff(n)
+    f["timing"] = timing_score(f)
+    return f
+
+
 def _lagged_market(panel: dict, index: pd.DatetimeIndex) -> pd.DataFrame:
     """시장 지표. 한국장은 같은 날 미국 종가를 볼 수 없으므로 전 종목 1거래일 지연 적용."""
     m = pd.DataFrame(index=index)
@@ -96,15 +106,12 @@ def build_panel(panel: dict[str, pd.DataFrame]) -> pd.DataFrame:
         if t not in panel or len(panel[t]) < 260:
             continue
         df = panel[t]
-        f = stock_features(df)
         bench = panel[benchmark_for(s)]["close"].reindex(df.index, method="ffill")
+        f = price_frame(df, bench)
         lb = np.log(bench)
-        for n in (21, 63):
-            f[f"rs_{n}"] = f[f"ret_{n}"] - lb.diff(n)
         f["bench_ret21"] = lb.diff(21)
         f["bench_ma200_gap"] = bench / bench.rolling(200).mean() - 1
         f = f.join(_lagged_market(panel, df.index))
-        f["timing"] = timing_score(f)
         f["is_kr"] = int(s["market"] == "KR")
         f["category"] = cats.index(s["category"])
         f["ticker"] = t

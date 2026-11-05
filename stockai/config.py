@@ -71,4 +71,5 @@ def benchmark_for(stock: dict) -> str:
 def all_tickers() -> list[str]:
     u = universe()
     etfs = [t["etf"] for t in u["themes"].values()]
-    return sorted({s["ticker"] for s in u["stocks"]} | set(etfs) | set(u["market_series"]))
+    watch = [w["ticker"] for w in u["watchlist"]]
+    return sorted({s["ticker"] for s in u["stocks"]} | set(etfs) | set(u["market_series"]) | set(watch))

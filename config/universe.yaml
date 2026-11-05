@@ -65,6 +65,15 @@ themes:
   steel: {name: 철강·금속, etf: XME, news: "steel tariff prices"}
   rare_earth: {name: 희토류·전략광물, etf: REMX, news: "rare earth critical minerals supply"}
 
+# 지정 감시 종목. 기업 종목은 위 stocks 의 평가를 쓰고, 금·은 ETF는 추세·수급·거시만 평가
+watchlist:
+  - {ticker: GLD, name: 금 ETF(GLD), market: US, category: 원자재, driver: GC=F}
+  - {ticker: SLV, name: 은 ETF(SLV), market: US, category: 원자재, driver: SI=F}
+  - {ticker: VRT}
+  - {ticker: 267260.KS}
+  - {ticker: REGN}
+  - {ticker: VRTX}
+
 benchmarks: {KR: "^KS11", KRQ: "^KQ11", US: "^GSPC"}
 market_series: ["^GSPC", "^IXIC", "^KS11", "^KQ11", "^VIX", "^TNX", "DX-Y.NYB", "KRW=X", "CL=F", "NG=F", "GC=F", "HG=F", "SI=F", "PL=F", "PA=F"]
 # 일일 보고의 원자재 시세. ETF는 현물 가격이 아니라 관련 기업 주가의 대리 지표

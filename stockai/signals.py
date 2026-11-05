@@ -49,7 +49,11 @@ def trade_plan(close: float, atr_pct: float, ma20_gap: float) -> dict:
             "position_pct": round(min(r["risk_per_trade"] / risk_share, r["max_position"]) * 100, 1)}
 
 
-def _crashed(feat: pd.Series) -> bool:
+def overextended(feat: pd.Series) -> bool:
+    return bool(feat.get("ma20_gap", 0) > 3 * feat.get("atr_pct", 1))
+
+
+def crashed(feat: pd.Series) -> bool:
     """5일 수익률이 평소 변동폭의 3.5배 넘게 하락."""
     sig, r5 = feat.get("vol_63"), feat.get("ret_5")
     return bool(pd.notna(sig) and pd.notna(r5) and sig > 0 and r5 / (sig * 5 ** 0.5) <= -3.5)
@@ -61,10 +65,10 @@ def decide(c: dict, feat: pd.Series, regime_stage: str) -> dict:
     reasons: list[str] = []
     timing = c.get("timing")
     broken = timing is not None and timing <= th["timing_sell"] and feat.get("ma200_gap", 0) < 0
-    extended = feat.get("ma20_gap", 0) > 3 * feat.get("atr_pct", 1)
+    extended = overextended(feat)
     company_ok = all(g[k] is True for k in ("기술력", "시장 수요", "수익성"))
     all_ok = company_ok and g["가격 적정성"] is True
-    crash = _crashed(feat)
+    crash = crashed(feat)
     news_flag = bool(c.get("red_flags"))                   # 제목 키워드라 오탐이 있어 매수만 막는다
     earnings_soon = c.get("earnings_days") is not None and 0 <= c["earnings_days"] <= 3
 

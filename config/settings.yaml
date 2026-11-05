@@ -34,3 +34,17 @@ view_weights:
 
 # unusual_z: 하루 등락이 평소 변동폭의 몇 배면 일일 보고 특이 사항에 넣을지
 alerts: {dedup_days: 3, daily_top: 5, unusual_z: 3}
+
+# 감시 종목 점수 (사람이 정한 가중치이며 통계적으로 검증된 값이 아님). 점수는 상승 확률이 아니다.
+# blocked_buy_max: 공시, 급락, 실적 임박 등 안전장치에 걸리면 매수 점수를 이 값 이하로 제한
+watch:
+  alert: 90
+  strong: 95
+  dedup_days: 3
+  blocked_buy_max: 89
+  buy: {timing: 0.35, value: 0.15, fin: 0.10, tech: 0.10, flow: 0.10, news: 0.10, macro: 0.10}
+  sell: {timing: 0.40, abnormal: 0.15, value: 0.10, fin: 0.10, flow: 0.10, news: 0.05, macro: 0.10}
+  # 평균 원점수를 보고 점수로 바꾸는 눈금 [원점수, 점수]. 90점은 최근 3년 원점수 상위 약 2%, 95점은 0.5% 지점
+  # (2026-11-05 측정. 기업·거시 값을 그날 값으로 고정한 어림값이며 수익성을 뜻하지 않음)
+  buy_scale: [[0, 0], [81.5, 90], [83.4, 95], [100, 100]]
+  sell_scale: [[0, 0], [77.0, 90], [81.7, 95], [100, 100]]

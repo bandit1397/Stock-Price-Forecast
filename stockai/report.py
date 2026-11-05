@@ -61,6 +61,18 @@ def unusual(rep: dict) -> list[str]:
             + [f"""{r["name"]} 뉴스 경고어 '{r["red_flags"][0]["word"]}' (오탐 가능, 원문 확인)""" for r in stocks if r["red_flags"]])
 
 
+def watch_lines(rep: dict) -> list[str]:
+    if not rep["watch"]:
+        return []
+    lines = ["\n■ 감시 종목 점수 (매수 / 매도, 상승 확률 아님)"]
+    for s in rep["watch"]:
+        held = f' | 매수 제한: {s["held"][0]}' if s["held"] else ""
+        lines.append(f'· {s["name"]} {s["buy"]:.0f} / {s["sell"]:.0f}{held}')
+    side = {"buy": "매수", "sell": "매도"}
+    lines += [f'· 알림 성적: {side[c["side"]]} {c["label"]} {c["n"]}건 중 {c["hit"]:.0%} 적중, 평균 {c["avg"]:+.1%}' for c in rep["watch_scorecard"]]
+    return lines
+
+
 def telegram_summary(rep: dict) -> str:
     n = settings()["alerts"]["daily_top"]
     reg = rep["regime"]
@@ -85,6 +97,7 @@ def telegram_summary(rep: dict) -> str:
     lines += [f"· {x}" for x in odd[:UNUSUAL_MAX]]
     if len(odd) > UNUSUAL_MAX:
         lines.append(f"· 외 {len(odd) - UNUSUAL_MAX}건 생략")
+    lines += watch_lines(rep)
     lines.append("\n■ 원자재 시세 (1일 / 1개월 | 추세)")
     lines += commodity_lines(rep)
     for title, (category, theme_ids) in SECTORS.items():
